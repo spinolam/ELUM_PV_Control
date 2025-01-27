@@ -50,10 +50,4 @@ class PVBESSController(PIController):
         return new_max_pv_power,bess_setpoint
     
 
-class BESS:
-    def __init__(self,  nominal_power, initial_soc, delta_t=1, tau=2):
-        self.soc = initial_soc
-        self.bess_power = 0
-        self.alpha = delta_t / tau
-        self.delta_t = delta_t
-        self.nominal_power = nominal_power
+
