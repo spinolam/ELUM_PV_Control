@@ -8,11 +8,11 @@ class PVInverterMaxController(PIController):
         # Call the parent class's initializer
         super().__init__(kp, ki, delta_t)
         
-    def calculate_max_pv_power(self, pcc_power,pv_power,nominal_pv_power,max_grid_allowed,max_pv_power_lim=np.inf):
+    def calculate_max_pv_power(self, pcc_power_out,pv_power_out,nominal_pv_power,max_grid_allowed,max_pv_power_lim=np.inf):
         # Observe load disturbance (necessary if feedforward)
-        load_observations=pcc_power-pv_power
+        load_observations=pcc_power_out-pv_power_out
         # Find new max allowed pv power with integral corrections
-        new_max_pv_power = nominal_pv_power + self.integral_action(max_grid_allowed,pcc_power)
+        new_max_pv_power = nominal_pv_power + self.integral_action(max_grid_allowed,pcc_power_out)
         # Saturate allowed pv power nominal value <=PV_max <= max_value_possible
         new_max_pv_power=max(nominal_pv_power, min(new_max_pv_power, max_pv_power_lim)) #uncomment this line to use saturation
         return  new_max_pv_power
