@@ -16,7 +16,7 @@ class PIController:
         self.delta_t = delta_t
         self.integral_error = 0
 
-    def integral_action(self, setpoint,measured_value):
+    def integral_action(self, setpoint: float,measured_value: float) -> float:
         # Update integral term
         error = setpoint - measured_value
         self.integral_error += error*self.delta_t 

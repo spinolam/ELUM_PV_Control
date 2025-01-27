@@ -33,7 +33,8 @@ class BESS:
         self.nominal_power = nominal_power
         self.nominal_capacity= 4.2 # Wh
         self.number_of_cells = 2
-
+        self.max_soc = 95
+        self.min_soc = 5
 
     def simulate_bess_discrete(self, current_power):
             # Parameters model Voc
@@ -47,7 +48,7 @@ class BESS:
             Voc_nom=8.4
 
 
-            if self.soc < 95 and self.soc >5:
+            if self.soc < self.max_soc and self.soc >self.min_soc:
 
                 soc_new = self.soc - self.delta_t*current_power*100/(3600*self.nominal_capacity)
 
