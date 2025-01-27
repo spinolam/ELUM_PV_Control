@@ -3,17 +3,17 @@ import matplotlib.pyplot as plt
 from control_tools.controllers import PIController
 from control_tools.processes import Inverter
 
-class PVInverterMaxController(PIController):
+class PVInverterMaxController():
 
     def __init__(self, kp, ki, delta_t=1):
         # Call the parent class's initializer
-        super().__init__(kp, ki, delta_t)
+        self.controller_pv= PIController(kp, ki, delta_t)
         
     def calculate_controller_output(self, pcc_power_out,pv_power_out,nominal_pv_power,max_grid_allowed,max_pv_power_lim=np.inf):
         # Observe load disturbance (necessary if feedforward)
         load_observations=pcc_power_out-pv_power_out
         # Find new max allowed pv power with integral corrections
-        new_max_pv_power = nominal_pv_power + self.integral_action(max_grid_allowed,pcc_power_out)
+        new_max_pv_power = nominal_pv_power + self.controller_pv.integral_action(max_grid_allowed,pcc_power_out)
         # Saturate allowed pv power nominal value <=PV_max <= max_value_possible
         new_max_pv_power=max(nominal_pv_power, min(new_max_pv_power, max_pv_power_lim)) #uncomment this line to use saturation
         return  new_max_pv_power
@@ -24,17 +24,12 @@ def simulate_case_study_1(max_grid_injection=1000, nominal_pv_power=1000, dt=1, 
     Simulate PI control for Case Study 1.
 
     Parameters:
-        pcc_power (float): Initial PCC power (W). 
-        pv_output (float): Initial PV inverter power (W).
-        max_grid_injection (float): Maximum allowed grid injection (W).
+        max_grid_injection (float): Maximum grid injection power (W).
         nominal_pv_power (float): Nominal PV power (W).
-        kp (float): Proportional gain for PI controller.
-        ki (float): Integral gain for PI controller.
-        dt (float): Time step for simulation (s).
-        steps (int): Number of simulation steps.
-
+        dt (float): Sampling time (s).
+        steps (int): Number of simulation steps.   
     Returns:
-        list: Time-series data of PCC power and PV commands.
+        list: Time-series data of PCC power, PV power, PV command and load observations.
     """
 
     # Initialize PI controller
