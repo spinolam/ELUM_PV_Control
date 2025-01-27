@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from control_tools.controllers import PIController
+from control_tools.processes import Inverter
 
 class PVInverterMaxController(PIController):
 
@@ -17,33 +18,6 @@ class PVInverterMaxController(PIController):
         new_max_pv_power=max(nominal_pv_power, min(new_max_pv_power, max_pv_power_lim)) #uncomment this line to use saturation
         return  new_max_pv_power
     
-
-
-class Inverter:
-    def __init__(self, nominal_power, delta_t=1, tau=2):
-        self.pv_output_old = nominal_power
-        self.pv_power = nominal_power
-        self.alpha = delta_t / tau
-        self.delta_t = delta_t
-    
-    def set_dynamic_model(self, delta_t,tau=2):
-        self.delta_t = delta_t
-        self.alpha = delta_t / tau
-
-
-
-    def simulate_sld_discrete(self, pv_cmd_k):
-        # Update PV power using discrete dynamic equation
-        pv_next = (1 - self.alpha) * self.pv_output_old + self.alpha * pv_cmd_k
-
-        # Calculate PCC power
-        pv_output= self.pv_output_old
-        self.pv_output_old= pv_next
-
-        # Remove the initial state for plotting
-        return pv_output
-
-
 
 def simulate_case_study_1(max_grid_injection=1000, nominal_pv_power=1000, dt=1, steps=100):
     """
