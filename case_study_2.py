@@ -1,107 +1,59 @@
-class PIController:
-    def __init__(self, kp, ki, delta_t=1):
-        self.kp = kp
-        self.ki = ki
-        self.delta_t = delta_t
-        self.integral = 0
-        self.feedforward=0
+import numpy as np
+import matplotlib.pyplot as plt
+from control_tools.controllers import PIController
 
-    def integral_action(self, setpoint,measured_value):
-        # Update integral term
-        error = setpoint - measured_value
-        self.integral += error*self.delta_t 
-        # Return PI action
-        return self.kp * error + self.ki * self.integral
+class PVBESSController(PIController):
 
-
-    def feedfoward_action(self, setpoint,measured_value,measured_disturbance):
-        # Update integral term
-        error = setpoint - measured_value
-        self.integral += error*self.delta_t 
-        # Return PI action
-        uPI= self.kp * error + self.ki * self.integral
-        # Calculate feedforward
-        # Update feedforward term
-        disturbance = measured_disturbance
-        uFF=-(0.5)*disturbance 
-
-        # Return PI+Feedforward action
-        return uPI+1*uFF
-
-    def calculate_max_pv_power(self, pcc_power,pv_power,nominal_pv_power,max_grid_allowed):
-        load_observations=pcc_power-pv_power
-        return  nominal_pv_power + self.integral_action(max_grid_allowed,pcc_power)
+    def __init__(self, kp, ki, delta_t):
+        # Call the parent class's initializer
+        super().__init__(kp, ki, delta_t)
+        self.command_pv=0
+        self.command_bess=0
+        
+    def calculate_max_pv_power(self, pcc_power_out,max_grid_allowed,nominal_pv_power,max_pv_power_lim=np.inf):
+        # Find new max allowed pv power with integral corrections
+        new_max_pv_power = nominal_pv_power + self.integral_action(max_grid_allowed,pcc_power_out)
+        # Saturate allowed pv power nominal value <=PV_max <= max_value_possible
+        new_max_pv_power=max(nominal_pv_power, min(new_max_pv_power, max_pv_power_lim)) #uncomment this line to use saturation
+        return  new_max_pv_power
     
-    def reset_integral(self):
-        self.integral = 0
     
-    def reset_feedforward(self):
-        self.feedforward = 0
-
-class Inverter:
-    def __init__(self, nominal_power, delta_t=1, tau=2):
-        self.pv_output_old = nominal_power
-        self.pv_power = nominal_power
-        self.alpha = delta_t / tau
-        self.delta_t = delta_t
+    def calculate_bess_setpoint(self, pcc_power_out,max_grid_allowed,nominal_bess_power):
+        # Find new bess set point with integral corrections
+        bess_setpoint =  self.integral_action(max_grid_allowed,pcc_power_out)
+        # Saturate power setpoint <=PV_max <= max_value_possible
+        bess_setpoint = max(-nominal_bess_power, min(bess_setpoint, nominal_bess_power))
+        return  bess_setpoint
     
-    def set_dynamic_model(self, delta_t,tau=2):
-        self.delta_t = delta_t
-        self.alpha = delta_t / tau
+    def calculate_controller_output(self,pcc_power_out,pv_power_out,bess_power_out, bess_soc,max_grid_allowed,nominal_pv_power,nominal_bess_power):
+        grid_allowed_error=max_grid_allowed-pcc_power_out
+        soc_min=5; # Minimum SOC for BESS
+        soc_max=95; # Maximum SOC for BESS
+        # Calculate max PV power
+        if grid_allowed_error >0 or bess_soc>=soc_min or np.abs(bess_power_out)>=nominal_bess_power: # Prioritize grid injection if possible
+            new_max_pv_power=self.calculate_max_pv_power(pcc_power_out,max_grid_allowed,nominal_pv_power) 
+        else: # BESS to be used
+            new_max_pv_power=self.command_pv
+    
+        # Calcularte BESS power setpoint
+        bess_setpoint =  self.integral_action(max_grid_allowed,pcc_power_out)
+        if bess_setpoint >0 and bess_soc<=soc_min: # Check if possible to discharge
+            bess_setpoint=0
+            self.reset_integral()
+        elif bess_setpoint <0 and bess_soc>=soc_max: # Check if possible to charge
+            bess_setpoint=0
+            self.reset_integral()
 
-
-
-    def simulate_sld_discrete(self, pv_cmd_k):
-        # Update PV power using discrete dynamic equation
-        pv_next = (1 - self.alpha) * self.pv_output_old + self.alpha * pv_cmd_k
-
-        # Calculate PCC power
-        pv_output= self.pv_output_old
-        self.pv_output_old= pv_next
-
-        # Remove the initial state for plotting
-        return pv_output
+        # Update command values
+        self.command_pv=new_max_pv_power
+        self.command_bess=bess_setpoint
+        return new_max_pv_power,bess_setpoint
     
 
 class BESS:
-    def __init__(self, nominal_power, delta_t=1, tau=2):
-        self.bess_output_old = nominal_power
-        self.bess_power = nominal_power
+    def __init__(self,  nominal_power, initial_soc, delta_t=1, tau=2):
+        self.soc = initial_soc
+        self.bess_power = 0
         self.alpha = delta_t / tau
         self.delta_t = delta_t
-    
-    def set_dynamic_model(self, delta_t,tau=2):
-        self.delta_t = delta_t
-        self.alpha = delta_t / tau
-
-
-
-    def simulate_sld_discrete(self, pv_cmd_k):
-        # Update PV power using discrete dynamic equation
-        pv_next = (1 - self.alpha) * self.pv_output_old + self.alpha * pv_cmd_k
-
-        # Calculate PCC power
-        pv_output= self.pv_output_old
-        self.pv_output_old= pv_next
-
-        # Remove the initial state for plotting
-        return pv_output
-
-
-def calculate_max_pv_power(self, pcc_power,pv_power, bess_power, bess_soc, nominal_pv_power, nominal_bess_power,max_grid_allowed):
-        #load_observations=pcc_power-pv_power -bess_power
-
-
-        
-        maximum_pv_power_command = nominal_pv_power+integral_action(max_grid_allowed,pcc_power)
-        bess_power_setpoint = nominal_bess_power + proportial_action(max_grid_allowed,pcc_power)
-
-
-        # Enforce SOC constraints
-        if bess_soc >= soc_max and bess_power_setpoint<0:
-            bess_power_setpoint=0# Prevent charging
-        elif bess_soc <= soc_min and bess_power_setpoint>0:
-            bess_power_setpoint=0# Prevent discharging
-
-            
-        return  bess_power_setpoint, maximum_pv_power_command
+        self.nominal_power = nominal_power

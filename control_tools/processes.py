@@ -20,3 +20,12 @@ class Inverter:
 
         # Remove the initial state for plotting
         return pv_output
+    
+
+class BESS:
+    def __init__(self,  nominal_power, initial_soc, delta_t=1, tau=2):
+        self.soc = initial_soc
+        self.bess_power = 0
+        self.alpha = delta_t / tau
+        self.delta_t = delta_t
+        self.nominal_power = nominal_power

@@ -9,7 +9,7 @@ class PVInverterMaxController(PIController):
         # Call the parent class's initializer
         super().__init__(kp, ki, delta_t)
         
-    def calculate_max_pv_power(self, pcc_power_out,pv_power_out,nominal_pv_power,max_grid_allowed,max_pv_power_lim=np.inf):
+    def calculate_controller_output(self, pcc_power_out,pv_power_out,nominal_pv_power,max_grid_allowed,max_pv_power_lim=np.inf):
         # Observe load disturbance (necessary if feedforward)
         load_observations=pcc_power_out-pv_power_out
         # Find new max allowed pv power with integral corrections
@@ -54,7 +54,7 @@ def simulate_case_study_1(max_grid_injection=1000, nominal_pv_power=1000, dt=1, 
     for k in range(steps):
  
         load_observations.append(pcc_output[-1]-pv_output[-1])
-        pv_command.append(pi_controller.calculate_max_pv_power(pcc_output[-1], pv_output[-1], nominal_pv_power,max_grid_injection))
+        pv_command.append(pi_controller.calculate_controller_output(pcc_output[-1], pv_output[-1], nominal_pv_power,max_grid_injection))
         pv_output.append(inverter_pv.simulate_sld_discrete(pv_command[-1]))
         pcc_output.append(disturbance[k]+pv_output[-1])
 
