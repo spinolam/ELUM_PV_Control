@@ -1,47 +1,23 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from control_tools.controllers import PIController
 
+class PVInverterMaxController(PIController):
 
-
-class PIController:
     def __init__(self, kp, ki, delta_t=1):
-        self.kp = kp
-        self.ki = ki
-        self.delta_t = delta_t
-        self.integral = 0
-        self.feedforward=0
-
-    def integral_action(self, setpoint,measured_value):
-        # Update integral term
-        error = setpoint - measured_value
-        self.integral += error*self.delta_t 
-        # Return PI action
-        return self.kp * error + self.ki * self.integral
-
-
-    def feedfoward_action(self, setpoint,measured_value,measured_disturbance):
-        # Update integral term
-        error = setpoint - measured_value
-        self.integral += error*self.delta_t 
-        # Return PI action
-        uPI= self.kp * error + self.ki * self.integral
-        # Calculate feedforward
-        # Update feedforward term
-        disturbance = measured_disturbance
-        uFF=-(0.5)*disturbance 
-
-        # Return PI+Feedforward action
-        return uPI+1*uFF
-
-    def calculate_max_pv_power(self, pcc_power,pv_power,nominal_pv_power,max_grid_allowed):
+        # Call the parent class's initializer
+        super().__init__(kp, ki, delta_t)
+        
+    def calculate_max_pv_power(self, pcc_power,pv_power,nominal_pv_power,max_grid_allowed,max_pv_power_lim=np.inf):
+        # Observe load disturbance (necessary if feedforward)
         load_observations=pcc_power-pv_power
-        return  nominal_pv_power + self.integral_action(max_grid_allowed,pcc_power)
+        # Find new max allowed pv power with integral corrections
+        new_max_pv_power = nominal_pv_power + self.integral_action(max_grid_allowed,pcc_power)
+        # Saturate allowed pv power nominal value <=PV_max <= max_value_possible
+        new_max_pv_power=max(nominal_pv_power, min(new_max_pv_power, max_pv_power_lim)) #uncomment this line to use saturation
+        return  new_max_pv_power
     
-    def reset_integral(self):
-        self.integral = 0
-    
-    def reset_feedforward(self):
-        self.feedforward = 0
+
 
 class Inverter:
     def __init__(self, nominal_power, delta_t=1, tau=2):
@@ -88,7 +64,7 @@ def simulate_case_study_1(max_grid_injection=1000, nominal_pv_power=1000, dt=1, 
     """
 
     # Initialize PI controller
-    pi_controller = PIController(0.3, 0.3)
+    pi_controller = PVInverterMaxController(0.3, 0.3)
     inverter_pv = Inverter(1000)
 
     # Simulation parameters
@@ -102,7 +78,7 @@ def simulate_case_study_1(max_grid_injection=1000, nominal_pv_power=1000, dt=1, 
 
 
     for k in range(steps):
-        print(max_grid_injection-pcc_output[-1])
+ 
         load_observations.append(pcc_output[-1]-pv_output[-1])
         pv_command.append(pi_controller.calculate_max_pv_power(pcc_output[-1], pv_output[-1], nominal_pv_power,max_grid_injection))
         pv_output.append(inverter_pv.simulate_sld_discrete(pv_command[-1]))
@@ -116,7 +92,7 @@ def simulate_case_study_1(max_grid_injection=1000, nominal_pv_power=1000, dt=1, 
 # Simulation parameters
 time_steps = 100
 delta_t = 1.0  # Sampling time (s)
-max_grid_injection=900
+max_grid_injection=1000
 
 # Run the simulation
 pv_output, pcc_output, pv_command,load_observations = simulate_case_study_1(max_grid_injection=max_grid_injection)
