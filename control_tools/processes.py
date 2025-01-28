@@ -24,7 +24,7 @@ class Inverter:
     
 
 class BESS:
-    def __init__(self,  nominal_power, initial_soc=50, initial_voltage=0,delta_t=1, tau=2):
+    def __init__(self,  nominal_power, initial_soc=50, initial_voltage=7,delta_t=1, tau=2):
         self.soc = initial_soc
         self.voltage = initial_voltage
         self.bess_power = 0
@@ -36,7 +36,7 @@ class BESS:
         self.max_soc = 95
         self.min_soc = 5
 
-    def simulate_bess_discrete(self, current_power):
+    def simulate_bess_discrete(self, power_desired):
             # Parameters model Voc
             K1=0.1
             K2=1
@@ -47,7 +47,8 @@ class BESS:
             R0=0.005
             Voc_nom=8.4
 
-
+            current_power = power_desired/self.voltage
+            
             if self.soc < self.max_soc and self.soc >self.min_soc:
 
                 soc_new = self.soc - self.delta_t*current_power*100/(3600*self.nominal_capacity)
@@ -63,9 +64,8 @@ class BESS:
 
             
             
-            measured_soc = self.soc
             measured_voltage = self.voltage 
             measured_bess_power = current_power*measured_voltage
             self.soc = soc_new
             self.voltage  = new_voltage
-            return measured_soc, measured_bess_power
+            return  measured_bess_power
