@@ -1,10 +1,6 @@
 # Resolution for ELUM Recruitment Process Challenge
 This repository contains the resolution of the ELUM recruitment process, which consists of a coding problem for two case studies. The resolution of the case study 1 is `PVInverterMaxController()` in the file `case_study_1.py` and case study 2 is `PVMaxBESSController()` in the file `case_study.2.py`.
 
-Falta:
-1. Figuras control loops
-5. Resultados 
-
 ## Case study 1
 
 
@@ -22,7 +18,7 @@ nominal_pv_power (parameter)
 max_pv_power_command (variable)
 
 **Closed-loop system**
-
+![description](./documents/IMG_0285.jpg)
 *Control objectives*
 1. Optimize PV production
 2. Respect max_power_injection_grid>= pcc_power
@@ -43,6 +39,8 @@ max_pv_power_command (variable)
 
 
 **Results**
+![description](./documents/case_study_1_PI_only.png)
+
 **Possible improvements** :
 1. Include feedforward actions if loads as we can estimate loads
 2. Model PV inverter dynamics to find control gain with optimization methods
@@ -72,6 +70,9 @@ bess_power_setpoit (variable)
 
 **Closed-loop system**
 
+![description](./documents/IMG_0286.jpg)
+
+
 *Control objectives*
 1. Optimize PV production
 2. Respect max_power_injection_grid>= pcc_power
@@ -95,11 +96,13 @@ Discharge BESS only when PV production not enough to supply loads
 2 PI controller single-input-single-output with hierarchical corrections
 
 **Results**
+![description](./documents/case_study_2_PI_step_loads.png)
+![description](./documents/case_study_2_PI_step_loads_soc.png)
 
 **Improvements**
 Possible improvements:
 1. If we know how much enters in PV inverter, we can discharge BESS also to allow increase PV max.
-2. Use of MPC or other MIMO controllers to prioritize not 1 or another PI controller
+2. Use of MPC or other MIMO controllers to prioritize not 1 or another PI controller.
 
 ## Unit tests
 Run:
