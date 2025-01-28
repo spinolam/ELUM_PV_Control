@@ -1,10 +1,6 @@
 # Resolution for ELUM Recruitment Process Challenge
 This repository contains the resolution of the ELUM recruitment process, which consists of a coding problem for two case studies. The resolution of the case study 1 is `PVInverterMaxController()` in the file `case_study_1.py` and case study 2 is `PVMaxBESSController()` in the file `case_study.2.py`.
 
-Falta:
-1. Figuras control loops
-5. Resultados 
-
 ## Case study 1
 
 
